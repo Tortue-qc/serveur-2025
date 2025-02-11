@@ -1,0 +1,297 @@
+services:
+  zoraxy:
+    image: zoraxydocker/zoraxy:latest
+    container_name: zoraxy
+    restart: unless-stopped
+    ports:
+      - 80:80
+      - 443:443
+      - 8000:8000
+    volumes:
+      - ${ZORAXY_CONFIG}:/opt/zoraxy/config/
+      - /var/run/docker.sock:/var/run/docker.sock
+      - /etc/localtime:/etc/localtime
+    environment:
+      FASTGEOIP: "true"
+
+  mqtt:
+    restart: unless-stopped
+    image: eclipse-mosquitto:latest
+    container_name: mqtt-mosquitto
+    ports:
+      - "${MQTT_PORT}:1883"
+    volumes:
+      - ${MQTT_DATA}:/etc/mosquitto
+      - ${MQTT_CONFIG}:/mosquitto/config
+
+  calibre:
+    restart: unless-stopped
+    image: lscr.io/linuxserver/calibre:latest
+    container_name: calibre
+    security_opt:
+      - seccomp:unconfined
+    environment:
+      - PUID=1000
+      - PGID=1000
+      - TZ=${TZ}
+    volumes:
+      - ${CALIBRE_CONFIG}:/config
+      - ${CALIBRE_LIVRES}:/Livres_NAS
+    ports:
+      - ${CALIBRE_PORT_HTTP}:8080
+      - ${CALIBRE_PORT_WEB_SERVER}:8081
+
+  audiobookshelf:
+    restart: unless-stopped
+    image: ghcr.io/advplyr/audiobookshelf:latest
+    container_name: audiobookshelf
+    ports:
+      - ${AUDIOBOOKSHELF_PORT}:80
+    volumes:
+      - ${AUDIOBOOKSHELF_AUDIOBOOKS}:/audiobooks
+      - ${AUDIOBOOKSHELF_PODCAST}:/podcasts
+      - ${AUDIOBOOKSHELF_CONFIG}:/config
+      - ${AUDIOBOOKSHELF_METADATA}:/metadata
+    environment:
+      - PUID=1000
+      - PGID=1000
+      - TZ=${TZ}
+
+  grocy:
+    image: lscr.io/linuxserver/grocy:latest
+    restart: unless-stopped
+    container_name: grocy
+    environment:
+      - PUID=1000
+      - PGID=1000
+      - TZ=${TZ}
+      - GROCY_CALENDAR_FIRST_DAY_OF_WEEK=6
+      - GROCY_CURRENCY=CAD
+      - GROCY_DEFAULT_LOCALE=fr
+      - GROCY_FEATURE_FLAG_BATTERIES=false
+      - GROCY_FEATURE_FLAG_CHORES=false
+      - GROCY_FEATURE_FLAG_TASKS=false
+      - GROCY_FEATURE_FLAG_EQUIPMENT=false
+      - GROCY_FEATURE_FLAG_CALENDAR=false
+      - GROCY_FEATURE_FLAG_STOCK_PRICE_TRACKING=false
+      - GROCY_FEATURE_FLAG_STOCK_BEST_BEFORE_DATE_TRACKING=false
+      - GROCY_FEATURE_FLAG_STOCK_PRODUCT_OPENED_TRACKING=false
+      - GROCY_FEATURE_FLAG_STOCK_PRODUCT_FREEZING=false
+      - GROCY_FEATURE_FLAG_STOCK_BEST_BEFORE_DATE_FIELD_NUMBER_PAD=false
+      - GROCY_FEATURE_FLAG_CHORES_ASSIGNMENTS=false
+    volumes:
+      - ${GROCY_CONFIG}:/config
+    ports:
+      - ${GROCY_PORT}:80
+
+  cv:
+    image: jekyll/jekyll:4.2.0
+    restart: unless-stopped
+    container_name: cv-md
+    volumes:
+      - "${CV_FICHIER}:/srv/jekyll"
+    ports:
+      - "${CV_PORT}:4000"
+    command: jekyll serve --force_polling --drafts
+
+  dash:
+    image: mauricenino/dashdot:latest
+    restart: unless-stopped
+    container_name: dash
+    privileged: true
+    ports:
+      - '${DASH_PORT}:3001'
+    volumes:
+      - /:/mnt/host:ro
+    environment:
+      DASHDOT_ALWAYS_SHOW_PERCENTAGES: 'true'
+
+  homarr:
+    container_name: homarr
+    image: ghcr.io/ajnart/homarr:latest
+    restart: unless-stopped
+    volumes:
+     # - /var/run/docker.sock:/var/run/docker.sock # Optional, only if you want docker integration
+      - ${HOMARR_CONFIG}:/app/data/configs
+      - ${HOMARR_ICONS}:/app/public/icons
+      - ${HOMARR_DATA}:/data
+    ports:
+      - '${HOMARR_PORT}:7575'
+
+  navidrome:
+    restart: unless-stopped
+    image: deluan/navidrome:latest
+    container_name: navidrome
+    user: 1000:1000 # should be owner of volumes
+    ports:
+      - "${NAVIDROME_PORT}:4533"
+    environment:
+      ND_SCANSCHEDULE: 1h
+      ND_LOGLEVEL: info  
+      ND_SESSIONTIMEOUT: 720h
+      ND_BASEURL: ""
+      ND_UIWELCOMEMESSAGE: "Salut Christian!"
+    volumes:
+      - "${NAVIDROME_DATA}:/data"
+      - "${NAVIDROME_MUSIC}:/music:ro"
+
+  nhl-ufo:
+      container_name: nhl-ufo
+      image: turtle54375/nhl-ufo:latest
+      restart: unless-stopped
+
+  plex:
+    container_name: plex
+    image: plexinc/pms-docker
+    restart: unless-stopped
+    environment:
+      - TZ=${TZ}
+      - PLEX_CLAIM=${PLEX_CLAIMTOKEN}
+    network_mode: host
+    volumes:
+      - ${PLEX_CONFIG}:/config
+      - ${PLEX_DATA}:/data
+
+  tautulli:
+    image: ghcr.io/tautulli/tautulli
+    container_name: tautulli
+    restart: unless-stopped
+    volumes:
+      - ${TAUTULLI_CONFIG}:/config
+    environment:
+      - PUID=1000
+      - PGID=1000
+      - TZ=${TZ}
+    ports:
+      - ${TAUTULLI_PORT}:8181
+
+  portainer:
+      container_name: portainer
+      image: portainer/portainer-ce
+      environment: 
+        - TZ=${TZ}
+      volumes:
+        - /var/run/docker.sock:/var/run/docker.sock
+        - ${PORTAINER_DATA}:/data
+      ports:
+        - ${PORTAINER_PORT}:9443
+      restart: unless-stopped
+
+  prowlarr:
+    image: lscr.io/linuxserver/prowlarr:latest
+    container_name: prowlarr
+    environment:
+      - PUID=1000
+      - PGID=1000
+      - TZ=${TZ}
+    volumes:
+      - ${PROWLARR_CONFIG}:/config
+    ports:
+      - ${PROWLARR_PORT}:9696
+    restart: unless-stopped
+
+  sonarr:
+    image: lscr.io/linuxserver/sonarr:latest
+    container_name: sonarr
+    environment:
+      - PUID=1000
+      - PGID=1000
+      - TZ=${TZ}
+    volumes:
+      - ${SONARR_CONFIG}:/config
+      - ${SONARR_SERIES}:/tv
+      - ${SONARR_DOWNLOAD}:/data/Videos/download
+    ports:
+      - ${SONARR_PORT}:8989
+    restart: unless-stopped
+
+  radarr:
+    image: lscr.io/linuxserver/radarr:latest
+    container_name: radarr
+    environment:
+      - PUID=1000
+      - PGID=1000
+      - TZ=${TZ}
+    volumes:
+      - ${RADARR_CONFIG}:/config
+      - ${RADARR_FILM}:/movies
+      - ${RODARR_DOWNLOAD}:/data/Videos/download
+    ports:
+      - ${RADARR_PORT}:7878
+    restart: unless-stopped
+
+  lidarr:
+    image: lscr.io/linuxserver/lidarr:latest
+    container_name: lidarr
+    environment:
+      - PUID=1000
+      - PGID=1000
+      - TZ=${TZ}
+    volumes:
+      - ${LIDARR_CONFIG}:/config
+      - ${LIDARR_MUSIC}:/music
+      - ${LIDARR_DOWNLOAD}:/data/Videos/download
+    ports:
+      - ${LIDARR_PORT}:8686
+    restart: unless-stopped
+
+  overseerr:
+    image: sctx/overseerr:latest
+    container_name: overseerr
+    environment:
+      - LOG_LEVEL=debug
+      - TZ=${TZ}
+    ports:
+      - ${OVERSEERR_PORT}:5055
+    volumes:
+      - ${OVERSEERR_CONFIG}:/app/config
+    restart: unless-stopped
+    
+  flaresolverr:
+    image: pantlesscoding/flaresolverr:latest
+    dns:
+    - "8.8.8.8"
+    container_name: flaresolverr
+    environment:
+     - PUID=1000
+     - PGID=1000
+     - LOG_LEVEL=${LOG_LEVEL:-info}
+    ports:
+      - "${FLARESOLVERR_PORT}:8191"
+    restart: unless-stopped
+
+  whatsupdocker:
+    image: getwud/wud
+    container_name: wud
+    volumes:
+      - /var/run/docker.sock:/var/run/docker.sock
+    ports:
+      - ${WHATSUPDOCKER_PORT}:3000
+    restart: unless-stopped
+  
+  transmission-pia:
+        image: haugene/transmission-openvpn
+        container_name: transmission-pia
+        cap_add:
+            - NET_ADMIN
+        volumes:
+            - '${TRANSMISSION_DATA}:/data'
+            - '${TRANSMISSION_CONFIG}:/config'
+        environment:
+            - PUID=1000
+            - PGID=1000
+            - OPENVPN_PROVIDER=PIA
+            - OPENVPN_CONFIG=ca_montreal
+            - LOCAL_NETWORK=${TRANSMISSION_LOCAL_NETWORK}
+            - TRANSMISSION_DOWNLOAD_DIR=/data/Videos/download
+            - TRANSMISSION_WEB_UI=flood-for-transmission
+            - OPENVPN_USERNAME=${TRANSMISSION_PIA_USERNAME}
+            - OPENVPN_PASSWORD=${TRANSMISSION_PIA_PASSWORD}
+        logging:
+            driver: json-file
+            options:
+                max-size: 10m
+        ports:
+            - '${TRANSMISSION_PORT}:9091'
+        privileged: true
+        restart: unless-stopped

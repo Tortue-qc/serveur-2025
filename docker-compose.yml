@@ -58,7 +58,7 @@ services:
       - TZ=${TZ}
 
   grocy:
-    image: lscr.io/linuxserver/grocy:latest
+    image: lscr.io/linuxserver/grocy:4.4.2
     restart: unless-stopped
     container_name: grocy
     environment:
@@ -105,16 +105,16 @@ services:
       - /:/mnt/host:ro
     environment:
       DASHDOT_ALWAYS_SHOW_PERCENTAGES: 'true'
-
+  
   homarr:
     container_name: homarr
-    image: ghcr.io/ajnart/homarr:latest
+    image: ghcr.io/homarr-labs/homarr:latest
     restart: unless-stopped
     volumes:
-     # - /var/run/docker.sock:/var/run/docker.sock # Optional, only if you want docker integration
-      - ${HOMARR_CONFIG}:/app/data/configs
-      - ${HOMARR_ICONS}:/app/public/icons
-      - ${HOMARR_DATA}:/data
+      - /var/run/docker.sock:/var/run/docker.sock # Optional, only if you want docker integration
+      - ${HOMARR_APPDATA}:/appdata
+    environment:
+      - SECRET_ENCRYPTION_KEY=${HOMARR_SECRET_ENCRYPTION_KEY}
     ports:
       - '${HOMARR_PORT}:7575'
 
@@ -135,10 +135,17 @@ services:
       - "${NAVIDROME_DATA}:/data"
       - "${NAVIDROME_MUSIC}:/music:ro"
 
-  nhl-ufo:
-      container_name: nhl-ufo
-      image: turtle54375/nhl-ufo:latest
-      restart: unless-stopped
+  # nhl-ufo:
+  #     container_name: nhl-ufo
+  #     image: turtle54375/nhl-ufo:latest
+  #     restart: unless-stopped
+
+  mlb-ufo:
+    container_name: mlb-ufo
+    image: turtle54375/mlb-ufo:latest
+    restart: unless-stopped
+    environment:
+      TEAM_ID: 141 #Blue Jays
 
   plex:
     container_name: plex
@@ -151,6 +158,24 @@ services:
     volumes:
       - ${PLEX_CONFIG}:/config
       - ${PLEX_DATA}:/data
+
+  emby:
+    image: emby/embyserver
+    container_name: emby
+    network_mode: host # Enable DLNA and Wake-on-Lan
+    environment:
+      - UID=1000 # The UID to run emby as (default: 2)
+      - GID=100 # The GID to run emby as (default 2)
+      - GIDLIST=100 # A comma-separated list of additional GIDs to run emby as (default: 2)
+    volumes:
+      - ${EMBY_CONFIG}:/config # Configuration directory
+      - ${EMBY_MEDIA}:/mnt/share1 # Media directory
+    ports:
+      - ${EMBY_HTTP_PORT}:8096 # HTTP port
+      - ${EMBY_HTTPS_PORT}:8920 # HTTPS port
+    devices:
+      - /dev/dri:/dev/dri # VAAPI/NVDEC/NVENC render nodes
+    restart: unless-stopped
 
   tautulli:
     image: ghcr.io/tautulli/tautulli
@@ -248,7 +273,8 @@ services:
     restart: unless-stopped
     
   flaresolverr:
-    image: pantlesscoding/flaresolverr:latest
+  #    image: pantlesscoding/flaresolverr:latest
+    image: alexfozor/flaresolverr:pr-1300-experimental
     dns:
     - "8.8.8.8"
     container_name: flaresolverr

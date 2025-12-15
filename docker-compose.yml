@@ -26,7 +26,7 @@ services:
 
   calibre:
     restart: unless-stopped
-    image: lscr.io/linuxserver/calibre:latest
+    image: lscr.io/linuxserver/calibre:8.12.0
     container_name: calibre
     security_opt:
       - seccomp:unconfined
@@ -38,7 +38,8 @@ services:
       - ${CALIBRE_CONFIG}:/config
       - ${CALIBRE_LIVRES}:/Livres_NAS
     ports:
-      - ${CALIBRE_PORT_HTTP}:8080
+      # - ${CALIBRE_PORT_HTTP}:8080
+      - ${CALIBRE_PORT_HTTP}:8181
       - ${CALIBRE_PORT_WEB_SERVER}:8081
 
   audiobookshelf:
@@ -135,29 +136,29 @@ services:
       - "${NAVIDROME_DATA}:/data"
       - "${NAVIDROME_MUSIC}:/music:ro"
 
-  # nhl-ufo:
-  #     container_name: nhl-ufo
-  #     image: turtle54375/nhl-ufo:latest
-  #     restart: unless-stopped
+  nhl-ufo:
+      container_name: nhl-ufo
+      image: turtle54375/nhl-ufo:latest
+      restart: unless-stopped
 
-  mlb-ufo:
-    container_name: mlb-ufo
-    image: turtle54375/mlb-ufo:latest
-    restart: unless-stopped
-    environment:
-      TEAM_ID: 141 #Blue Jays
+  # mlb-ufo:
+  #   container_name: mlb-ufo
+  #   image: turtle54375/mlb-ufo:latest
+  #   restart: unless-stopped
+  #   environment:
+  #     TEAM_ID: 141 #Blue Jays
 
-  plex:
-    container_name: plex
-    image: plexinc/pms-docker
-    restart: unless-stopped
-    environment:
-      - TZ=${TZ}
-      - PLEX_CLAIM=${PLEX_CLAIMTOKEN}
-    network_mode: host
-    volumes:
-      - ${PLEX_CONFIG}:/config
-      - ${PLEX_DATA}:/data
+  # plex:
+  #   container_name: plex
+  #   image: plexinc/pms-docker
+  #   restart: unless-stopped
+  #   environment:
+  #     - TZ=${TZ}
+  #     - PLEX_CLAIM=${PLEX_CLAIMTOKEN}
+  #   network_mode: host
+  #   volumes:
+  #     - ${PLEX_CONFIG}:/config
+  #     - ${PLEX_DATA}:/data
 
   emby:
     image: emby/embyserver
@@ -176,18 +177,18 @@ services:
       - /dev/dri:/dev/dri # VAAPI/NVDEC/NVENC render nodes
     restart: unless-stopped
 
-  tautulli:
-    image: ghcr.io/tautulli/tautulli
-    container_name: tautulli
-    restart: unless-stopped
-    volumes:
-      - ${TAUTULLI_CONFIG}:/config
-    environment:
-      - PUID=1000
-      - PGID=1000
-      - TZ=${TZ}
-    ports:
-      - ${TAUTULLI_PORT}:8181
+  # tautulli:
+  #   image: ghcr.io/tautulli/tautulli
+  #   container_name: tautulli
+  #   restart: unless-stopped
+  #   volumes:
+  #     - ${TAUTULLI_CONFIG}:/config
+  #   environment:
+  #     - PUID=1000
+  #     - PGID=1000
+  #     - TZ=${TZ}
+  #   ports:
+  #     - ${TAUTULLI_PORT}:8181
 
   portainer:
       container_name: portainer
@@ -320,3 +321,16 @@ services:
             - '${TRANSMISSION_PORT}:9091'
         privileged: true
         restart: unless-stopped
+  wishlist:
+    container_name: wishlist
+    restart: unless-stopped
+    image: ghcr.io/cmintey/wishlist:latest
+    ports:
+      - ${WISHLIST_PORT}:3280
+    volumes:
+      - ${WISHLIST_UPLOAD}:/usr/src/app/uploads  # This is where user image uploads will be stored
+      - ${WISHLIST_DATA}:/usr/src/app/data        # This is where the sqlite database will be stored
+    environment:
+      ORIGIN: https://cadeaux.christianboisvert.org
+      # ORIGIN: http://192.168.2.10:3280 # The URL your users will be connecting to
+      TOKEN_TIME: 720 # hours until signup and password reset tokens expire
